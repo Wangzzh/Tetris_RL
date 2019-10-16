@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 
 class Tetris:
 
-    def __init__(self, render=False):
+    def __init__(self, width=10, height=20, action_per_frame=2, render=True):
         # parameters
         self.render = render
-        self.width = 10
-        self.height = 20
-        self.actions_per_frame = 1
+        self.width = width
+        self.height = height
+        self.actions_per_frame = action_per_frame
         self.actions = ["left", "right", "up", "down", "fall", "none"]
         self.num_actions = len(self.actions)
         self.done = False
@@ -53,6 +53,15 @@ class Tetris:
         plt.imshow(img)
         plt.show()
 
+    def get_printed_state(self):
+        if self.render:
+            for i in range(len(self.color_map)):
+                self.color[self.color_codes == i] = self.color_map[i]
+                self.color[self.moving == 1] = self.color_map[self.moving_color_code]
+            return self.color
+        else:
+            return np.maximum(self.board, self.moving)
+
     def print_state(self):
         if self.render:
             for i in range(len(self.color_map)):
@@ -82,7 +91,7 @@ class Tetris:
             return self.moving, self.board, 0, self.done
         self.time += 1
         self.__try_move__(action_id)
-        reward = 0
+        reward = 1
         done = False
         if self.time % self.actions_per_frame == 0:
             try_result = self.__try_move__(3)
@@ -90,13 +99,19 @@ class Tetris:
                 self.stuck_count += 1
                 if self.stuck_count == self.actions_per_frame:
                     self.board = np.maximum(self.board, self.moving)
-                    self.color_codes[self.moving > 0] = self.moving_color_code
+                    if self.render:
+                        self.color_codes[self.moving > 0] = self.moving_color_code
                     self.moving = np.zeros(self.moving.shape)
-                    reward = self.__remove_rows__()
-                    done = not self.__spawn_piece__()
+                    reward += self.__remove_rows__()
+                    if not self.__spawn_piece__():
+                        done = True
+                        reward = -100
                     self.stuck_count = 0
                     self.done = done
-        return self.moving, self.board, reward, done
+        return self.get_state(), reward, done
+
+    def get_state(self):
+        return [self.moving, self.board]
 
     def __remove_rows__(self):
         new_board = np.zeros(self.board.shape)
@@ -108,11 +123,14 @@ class Tetris:
             if not full[self.height - 1 - i]:
                 new_board[cur_row] = self.board[self.height - 1 - i]
                 new_color_codes[cur_row] = self.color_codes[self.height - 1 - i]
-                count += 1
                 cur_row -= 1
+            else:
+                count += 1
         self.board = new_board
         self.color_codes = new_color_codes
-        return count
+        if count != 0:
+            print("Removed %d lines!" % count)
+        return count * (count + 1) * 5
 
 
     def __spawn_piece__(self):
@@ -159,6 +177,8 @@ class Tetris:
             if self.moving_w + rotated.shape[1] > self.moving.shape[1]:
                 return False
             if self.moving_w < 0:
+                return False
+            if self.moving_h + rotated.shape[0] > self.moving.shape[0]:
                 return False
             new_moving[self.moving_h:self.moving_h + rotated.shape[0], self.moving_w:self.moving_w + rotated.shape[1]] = rotated
             if np.any(np.logical_and(new_moving > 0, self.board > 0)):

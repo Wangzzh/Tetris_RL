@@ -9,9 +9,10 @@ class Tetris:
         self.render = render
         self.width = 10
         self.height = 20
-        self.actions_per_frame = 2
+        self.actions_per_frame = 1
         self.actions = ["left", "right", "up", "down", "fall", "none"]
         self.num_actions = len(self.actions)
+        self.done = False
 
         # init board
         self.board = np.zeros([self.height, self.width])
@@ -70,11 +71,15 @@ class Tetris:
             self.color = np.zeros([self.height, self.width, 3])
         self.time = 0
         self.score = 0
-
         self.__spawn_piece__()
+        self.stuck_count = 0
+        self.done = False
 
     def step(self, action_id):
         # return new_state, reward, done
+        if self.done:
+            print("Game finished")
+            return self.moving, self.board, 0, self.done
         self.time += 1
         self.__try_move__(action_id)
         reward = 0
@@ -90,7 +95,8 @@ class Tetris:
                     reward = self.__remove_rows__()
                     done = not self.__spawn_piece__()
                     self.stuck_count = 0
-        return np.maximum(self.moving, self.board), reward, done
+                    self.done = done
+        return self.moving, self.board, reward, done
 
     def __remove_rows__(self):
         new_board = np.zeros(self.board.shape)

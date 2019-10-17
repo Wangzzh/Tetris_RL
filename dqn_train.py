@@ -28,10 +28,11 @@ exploreStart = 0.9
 exploreEnd = 0.05
 exploreDecay = 20000
 explore = exploreStart
-numStepPerUpdate = 1000
+numStepPerUpdate = 5000
 memoryCapacity = 10000
 numEpisodes = 10000
-maxStepPerEpisode = 10000
+maxStepPerEpisode = 2000
+learningRate = 0.03
 
 # rendering
 render = True
@@ -45,9 +46,10 @@ policyNet.to(device)
 targetNet.to(device)
 memory = ReplayMemory(memoryCapacity)
 tetris = Tetris()
-optimizer = optim.RMSprop(policyNet.parameters(), lr=0.1)
+optimizer = optim.RMSprop(policyNet.parameters(), lr=learningRate)
 
 numSteps = 0
+bestEpisodeReward = -1000
 done = True
 
 # save results
@@ -66,7 +68,8 @@ configFile.writelines([
     "exploreDecay: %f\n" % exploreDecay,
     "numStepsPerUpdate: %d\n" % numStepPerUpdate,
     "memoryCapacity: %d\n" % memoryCapacity,
-    "maxStepPerEpisode: %d\n" % maxStepPerEpisode
+    "maxStepPerEpisode: %d\n" % maxStepPerEpisode,
+    "learningRate: %f\n" % learningRate
 ])
 configFile.close()
 
@@ -149,12 +152,14 @@ for episode in range(numEpisodes):
     #     episodeFile.write("Steps: %d, Rewards: %d, Total Steps: %d, Ending Explore: %f" % (step, episodeReward, numSteps, explore))
     #     episodeFile.close()
     
-    image = tetris.get_printed_state()
-    image = np.repeat(np.repeat(image, 4, axis=0), 4, axis=1)
-    # plt.imshow(image)
-    # plt.savefig(directory + "e%ds%dr%d.jpg" % (episode, step, episodeReward))
-    # scipy.misc.toimage(image, cmin=0., cmax=2.).save(directory + "e%ds%dr%d.jpg" % (episode, step, episodeReward))
-    matplotlib.image.imsave(directory + "e%ds%dr%d.bmp" % (episode, step, episodeReward), image)
+    if episodeReward > bestEpisodeReward:
+        bestEpisodeReward = episodeReward
+        image = tetris.get_printed_state()
+        image = np.repeat(np.repeat(image, 4, axis=0), 4, axis=1)
+        # plt.imshow(image)
+        # plt.savefig(directory + "e%ds%dr%d.jpg" % (episode, step, episodeReward))
+        # scipy.misc.toimage(image, cmin=0., cmax=2.).save(directory + "e%ds%dr%d.jpg" % (episode, step, episodeReward))
+        matplotlib.image.imsave(directory + "e%ds%dr%d.bmp" % (episode, step, episodeReward), image)
 
     print("Episode: %d, Steps: %d/%d, Explore: %.3f, Reward: %d" % (episode, step, numSteps, explore, episodeReward))
 

@@ -130,7 +130,7 @@ class Tetris:
         self.color_codes = new_color_codes
         if count != 0:
             print("Removed %d lines!" % count)
-        return count * (count + 1) * 5
+        return count * (count + 1) * 50
 
 
     def __spawn_piece__(self):

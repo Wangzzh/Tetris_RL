@@ -1,6 +1,7 @@
 import math
 import random
 import os
+import shutil
 import datetime
 
 import numpy as np
@@ -72,6 +73,8 @@ configFile.writelines([
     "learningRate: %f\n" % learningRate
 ])
 configFile.close()
+shutil.copyfile("dqn.py", directory + "dqn.py")
+shutil.copyfile("dqn_train.py", directory + "dqn_train.py")
 
 def select_action(state):
     global explore

@@ -3,7 +3,10 @@ import random
 import os
 import datetime
 
+import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+import scipy.misc
 
 import torch
 import torch.nn as nn
@@ -33,6 +36,7 @@ maxStepPerEpisode = 10000
 # rendering
 render = True
 renderStepDuration = 50
+renderEpisodeDuration = 20
 
 # initialization
 policyNet = TetrisDQN()
@@ -146,9 +150,38 @@ for episode in range(numEpisodes):
     #     episodeFile.close()
     
     image = tetris.get_printed_state()
-    plt.imshow(image)
-    plt.savefig(directory + "e%ds%dr%d.jpg" % (episode, step, episodeReward))
+    image = np.repeat(np.repeat(image, 4, axis=0), 4, axis=1)
+    # plt.imshow(image)
+    # plt.savefig(directory + "e%ds%dr%d.jpg" % (episode, step, episodeReward))
+    # scipy.misc.toimage(image, cmin=0., cmax=2.).save(directory + "e%ds%dr%d.jpg" % (episode, step, episodeReward))
+    matplotlib.image.imsave(directory + "e%ds%dr%d.bmp" % (episode, step, episodeReward), image)
 
     print("Episode: %d, Steps: %d/%d, Explore: %.3f, Reward: %d" % (episode, step, numSteps, explore, episodeReward))
+
+    if episode % renderEpisodeDuration == 0:
+        episodeDirectory = directory + "ep%d-video/" % episode
+        os.mkdir(episodeDirectory)
+        torch.save(policyNet.state_dict(), episodeDirectory + "e%d.pth" % episode)
+        tetris.start()
+        step = 0
+        episodeReward = 0
+        state = tetris.get_state()
+        while True:
+            image = tetris.get_printed_state()
+            image = np.repeat(np.repeat(image, 4, axis=0), 4, axis=1)
+            # plt.imshow(image)
+            # plt.savefig(episodeDirectory + "s%s-r%r.jpg" % (step, episodeReward))
+            # scipy.misc.toimage(image, cmin=0., cmax=2.).save(episodeDirectory + "s%s-r%r.jpg" % (step, episodeReward))
+            matplotlib.image.imsave(episodeDirectory + "s%s-r%r.bmp" % (step, episodeReward), image)
+            # model.load_state_dict(torch.load(PATH))
+            action = select_action(state)
+            step += 1
+            next_state, reward, done = tetris.step(action)
+            episodeReward += reward
+            state = next_state
+            if done:
+                break
+            
+
 
 

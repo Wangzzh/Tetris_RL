@@ -45,7 +45,7 @@ policyNet.to(device)
 targetNet.to(device)
 memory = ReplayMemory(memoryCapacity)
 tetris = Tetris()
-optimizer = optim.RMSprop(policyNet.parameters(), lr=1)
+optimizer = optim.RMSprop(policyNet.parameters(), lr=0.1)
 
 numSteps = 0
 done = True
@@ -181,6 +181,7 @@ for episode in range(numEpisodes):
             state = next_state
             if done:
                 break
+        print("Test Episode: %d, Steps: %d, Reward: %d" % (episode, step, episodeReward))
             
 
 
